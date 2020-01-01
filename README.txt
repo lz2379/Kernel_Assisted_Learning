@@ -1,37 +1,32 @@
-the original data: iwpc_data_7_3_09_revised.csv
-is public available:  It can be downloaded from
-https://www.pharmgkb.org/downloads/ and it is the "IWPC Data"
+This repository is for demostrating the kernel assisted learning (KAL) method proposed by Liangyu Zhu, Wenbin Lu, Michael R. Kosorko and Rui Song (2019).
 
- the .r file is the data trimming file. The .csv is the
-sheet 2 (without comments) of the .xls file. I also attach the NEJM
-paper and supp pdf. I am not sure if I trimmed the data in the best
-way, so please use it/modify at you will
+#--------------------------------------------
+File Explanations
+#--------------------------------------------
+'KAL-functions.R'  contains the functions for KAL method
+'KAL-simulations.R' contains the code for applying KAL method to simulation settings 
+'KAL-realdata.R' contains the code for applying KAL method to the IWPC dataset
+
+The two methods below are for the purpose of comparison
+'O-learning-functions.R'  contains the functions for O-learning method proposed by Guanhua Chen, Donglin Zeng, and Michael R. Kosorok (2016) (see paper for details)
+'O-learning-simulations.R' contains the code for applying O-learning method to simulation settings 
+'O-learning-realdata.R' contains the code for applying O-learning method to the IWPC dataset
+'SVMW_0.2.tar.gz' is a package required for applying the O-learning method.
+
+'discreteQ-functions.R'  contains the functions for discretized Q-learning method
+'discreteQ-simulations.R' contains the code for applying discretized Q-learning method to simulation settings 
+'discreteQ-realdata.R' contains the code for applying discretized Q-learning method to the IWPC dataset
+
+'data-preprocess.R' contains the code for preprocessing the dataset
+'Realdata-plots' contains the code for generating plots in the dataset
+
+'/Figures/' contains the figures generated for the paper
+'/results/' contains the results from simulation studies and real data application in 'csv' format.
 
 
+#--------------------------------------------
+IWPC Dataset
+#--------------------------------------------
+The original data: 'iwpc_data_7_3_09_revised.csv' is public available:  It can be downloaded from https://www.pharmgkb.org/downloads/ and it is the "IWPC Data"
+The processed data: 'data-preprocessed.csv'
 
-The covariates I used for constructing my training data are similar to
-the S1e Pharmacogenetic dosing algorithm, see page 5 of the NEJM
-supplementary pdf  (while I don't use the missing indicator as I use
-the complete data only).
-
-I did not impute covariates (except for one SNP in VKORC1, see page 12
-of the supp) such that I discard the incomplete data. I agree the
-dataset is confusing for the genotype, you may want to read the
-meta_data (sheet 1 of the .xls) to get definition of the covariate. In
-addition, although there are many SNPs in VKORC1, the S1e only uses
-rs9923231, and I think the genotype for CYP2C9 is the variable named
-CYP2C9_consensus.
-
-
-
-For the Enzyme and Amiodarone (other drugs that can have interaction
-with Warfarin), I was quite restrictive of the ascertainment accuracy
-such that I discarded the missing data (I keep only the records with
-drug status = 0 or 1). This can have a large impact on sample size. We
-ended up with 1700+ samples, but it is possible that the NEJM paper
-may have let the NA to be 0 when training their algorithm (the paper
-did not mention how the missing data was handled). I think if we let
-NA to be 0 for drug status, then the sample size (complete samples)
-would be about 3500+.  I also discard dose level seems to be outliers
-(<6, or >95), which one can argue different cut-off point should be
-used.

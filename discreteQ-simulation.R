@@ -1,57 +1,92 @@
 source('KAl-functions.r')
+source('discreteQ-function.R')
 
-solution0=c(1,0.5,0.5,0)
+####################################
+# Simulation settings with discretized Q learning
+####################################
 
-set.seed(1000)
-numberofsets=500
-for (samplesize in c(400,800)){
-  result_05=matrix(rep(NA,4*numberofsets),nrow=numberofsets)
-  cov_05=matrix(rep(NA,4*numberofsets),nrow=numberofsets)
-  cov2_05=matrix(rep(NA,4*numberofsets),nrow=numberofsets)
-  results_05=list()
-  d=10
-  value=rep(NA,numberofsets)
+
+###################################
+# Randomized trial Scenario 1-4
+###################################
+beta0 = c(0,  0.5) #beta0 = c(0, 1) for setting 2, 4
+dose_range = 1
+p = 1
+d = 10
+for (samplesize in c(400, 800)){
+  set.seed(2000)
+  numberofsets = 500
+  result_01 = matrix(rep(NA, d * (2 * p + 1) * numberofsets), 
+                     nrow = numberofsets)
   for (i in 1:numberofsets){
-    print(i)
-    set.seed(1000+i)
-    C=-25
-    N=800
-    beta=c(1,0.5,0.5,0)
-    mbeta=c(8,4,-2,-2)
-    sd0=1
-    p=length(beta)-1
-    A=runif(N,min=0,max=2)
-    X=matrix(runif(N*p,min=-1,max=1),nrow=N)
-    Q=C*(A-cbind(1,X)%*% beta)^2
-    mu=Q+cbind(1,X)%*% mbeta
-    Y=rnorm(rep(1,N),mean=mu,sd=rep(sd0,N))
-    Ad=floor(A*d/2)
-    X2=X^2
-    X=cbind(X,X2)
-    colnames(X)=c("X1","X2","X3","X1_2","X2_2","X3_2")
-    lm_fit=lm(Y~X+as.factor(Ad):X)
-    beta_est=lm_fit$coefficients
     
-    set.seed(5000+i)
-    C_new=-25
-    N_new=1000
-    beta_new=c(1,0.5,0.5,0)
-    mbeta_new=c(8,4,-2,-2)
-    p_new=length(beta_new)-1
-    A_new=runif(N_new,min=0,max=2)
-    X_new=matrix(runif(N_new*p_new,min=-1,max=1),nrow=N_new)
-    X_new2=cbind(X_new,X_new^2)
-    
-    predY=matrix(rep(NA,d*N_new),nrow=N_new)
-    predY[,1]=beta_est[1]+X_new2%*%beta_est[2:7]
-    for (j in 2:10){
-      predY[,j]=beta_est[1]+X_new2%*%beta_est[2:7]+X_new2%*%beta_est[(6*j-4):(6*j+1)]
-    }
-    outdose=(apply(predY,1,which.max)-0.5)/5
-    Yhat=C*(outdose-cbind(1,X_new)%*% beta_new)^2+cbind(1,X_new)%*% mbeta
-    value[i]=mean(Yhat)
-    write.csv(value,paste("results/discreteQ-sim05-value", samplesize, ".csv"),row.names=FALSE)
-    }
+    #generate dataset
+    dataset = generate_sample_random1(beta = beta0, 
+                                      N = samplesize
+                                      ) #mu0 = mu2 for setting 3, 4
+    Y = dataset$Y
+    X = dataset$X
+    A = dataset$A
+    N = dataset$N
+    p = dataset$p
+    #dummy variables for dose intervals
+    Ad = floor(A * d/(dose_range))
+    #quadratic terms
+    X2 = X^2
+    X_all = cbind(X, X2)
+    colnames(X_all) = c(paste("X", c(1:p), sep = ""), paste("X", c(1:p), "_2", sep = ""))
+    #fit the Q-learning model
+    lm_fit = lm(Y ~ factor(Ad) + X_all + as.factor(Ad):(X_all))
+    beta_est = lm_fit$coefficients
+    result_01[i, ] = beta_est
+  }
+  cat("\n Sample Size:", samplesize, "\n")
+  #calculate value function
+  v = sim_value1(betahat = result_01, 
+                 dose_function =  dose_discreteQ, 
+                 beta = beta0, 
+                 testN = 1000)
+}
+
+###################################
+# Observational Studies setting1-4
+###################################
+beta0 = c(0,  1) #beta0 = c(0, 0.5)
+dose_range = 1
+d = 10
+p = length(beta0)-1
+for (samplesize in c(400, 800)){
+  set.seed(2000)
+  numberofsets = 500
+  result_01 = matrix(rep(NA, d * (2 * p + 1) * numberofsets), nrow = numberofsets)
+  for (i in 1:numberofsets){
+    #print(i)
+    dataset = generate_sample_obs1(beta = beta0, 
+                                   N = samplesize, 
+                                   mu0 = mu2)
+    Y = dataset$Y
+    X = dataset$X
+    A = dataset$A
+    N = dataset$N
+    p = dataset$p
+    #dummy variables for dose intervals
+    Ad = floor(A * d / (dose_range))
+    #quadratic terms
+    X2 = X^2
+    X_all = cbind(X, X2)
+    colnames(X_all) = c(paste("X", c(1:p), sep = ""), paste("X", c(1:p), "_2", sep = ""))
+    #fit the Q-learning model
+    lm_fit = lm(Y ~ factor(Ad) + X_all + as.factor(Ad):(X_all))
+    beta_est = lm_fit$coefficients
+    result_01[i, ] = beta_est
+  }
+  cat("\n Sample Size:", samplesize, "\n")
+  #value function
+  v = sim_value1(betahat = result_01, 
+                 dose_function =  dose_discreteQ, 
+                 beta = beta0, 
+                 testN = 1000, 
+                 mu0 = mu2)
 }
 
 

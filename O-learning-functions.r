@@ -1,8 +1,7 @@
-###################### R script for Personalized dose finding: Part A, source funcions  ####
-###################### using Outcome weighted learning         #############################
+###################### R script for Personalized dose finding####
+###################### using Outcome weighted learning#############################
 ###################### Authors: Guanhua Chen, Donglin Zeng, Michael R. Kosorok #############
 ###################### Contact: g.chen@vanderbilt.edu          #############################
-
 
 #### Load dependent packages ############
 library(gbm)
@@ -25,10 +24,10 @@ Scenario1 <- function(size,ncov,seed){
   set.seed(seed)
   X = matrix(runif(size*ncov,-1,1),ncol=ncov)
   A = runif(size,0,2)
-  D_opt = 1 + 0.5*X[,2] + 0.5*X[,1]
-  mu =   8 + 4*X[,1] - 2*X[,2] - 2*X[,3] - 25*((D_opt-A)^2)
+  D_opt = 1 + 0.5 * X[,2] + 0.5 * X[,1]
+  mu =   8 + 4 * X[,1] - 2 * X[,2] - 2 * X[,3] - 25 * ((D_opt - A)^2)
   R = rnorm(length(mu),mu,1)
-  datainfo = list(X=X,A=A,R=R,D_opt=D_opt,mu=mu)
+  datainfo = list(X = X, A = A, R = R, D_opt = D_opt,mu = mu)
   return(datainfo)
 }
 
@@ -136,7 +135,7 @@ F.aac.iter = function(i,data,ps.model,ps.num,rep,criterion) {
     newsample = data[bo,]
     j.drop = match(c("T"),names(data))
     j.drop = j.drop[!is.na(j.drop)]
-    x = newsample[,-j.drop]
+    x = as.matrix(newsample[,-j.drop])
     if(criterion == "spearman"| criterion == "kendall"){
       ac = apply(x, MARGIN = 2, FUN = cor, y = newsample$T,
                  method = criterion)
@@ -359,4 +358,11 @@ dose.cv <- function(datall,epsilon,lambda,cvfold,tunefunc,optimfunc,seed){
   result$error = tmp.result$error[[1]]
   #result$obj = tmp.result$obj[[1]]
   return(result)
+}
+
+
+#additional function for generating dose after estimation coefficients with lol
+
+dose_lol=function(testX,betahat){
+  return(betahat[1]+testX%*%betahat[-1])
 }
